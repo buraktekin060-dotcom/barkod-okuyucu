@@ -1,0 +1,36 @@
+{
+  "name": "Barkod Okuyucu - Alışveriş Asistanı",
+  "short_name": "Barkod Okuyucu",
+  "description": "Kamera ile barkod okutarak alışveriş yapın, fiyatları hesaplayın, ürün yönetin",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#667eea",
+  "orientation": "portrait",
+  "categories": ["shopping", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icon.svg",
+      "sizes": "540x720",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Barkod Oku",
+      "short_name": "Oku",
+      "description": "Kamera ile barkod oku",
+      "url": "/index.html",
+      "icons": [{ "src": "icon.svg", "sizes": "96x96" }]
+    }
+  ]
+}

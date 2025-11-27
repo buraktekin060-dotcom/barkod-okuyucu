@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Barkod Okuyucu">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="Kamera ile barkod okutarak alışveriş yapın, fiyatları hesaplayın">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <title>Barkod Okuyucu - Alışveriş Asistanı</title>
+    <style>
+        * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #2196F3;
+  --primary-dark: #1976D2;
+  --success: #4CAF50;
+  --danger: #f44336;
+  --warning: #FF9800;
+  --info: #00BCD4;
+  --light: #f5f5f5;
+  --dark: #333;
+  --shadow: 0 2px 8px rgba(0,0,0,0.1);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding-bottom: 20px;
+}
+
+.app {
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  min-height: 100vh;
+  box-shadow: var(--shadow-lg);
+}
+
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 24px 20px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.header h1 {
+  font-size: 28px;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.header p {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.notification {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  animation: slideDown 0.3s ease;
+  max-width: 90%;
+  text-align: center;
+  font-weight: 500;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.notification.success { background: var(--success); color: white; }
+.notification.error { background: var(--danger); color: white; }
+.notification.info { background: var(--info); color: white; }
+
+.main-content {
+  padding: 20px;
+  min-height: calc(100vh - 300px);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+}
+
+.empty-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+.empty-state h2 {
+  color: #666;
+  margin-bottom: 8px;
+  font-size: 24px;
+}
+
+.empty-state p {
+  color: #999;
+  font-size: 16px;
+}
+
+.product-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.product-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid #eee;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.product-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+
+.product-icon {
+  font-size: 48px;
+  flex-shrink: 0;
+}
+
+.product-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.product-info h3 {
+  font-size: 18px;
+  color: var(--dark);
+  font-weight: 600;
+}
+
+.product-category {
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.product-barcode {
+  font-size: 11px;
+  color: #999;
+}
+
+.btn-remove {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.btn-remove:hover {
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.product-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-quantity {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-quantity:hover {
+  background: var(--primary-dark);
+  transform: scale(1.1);
+}
+
+.btn-quantity:active {
+  transform: scale(0.95);
+}
+
+.quantity {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dark);
+  min-width: 30px;
+  text-align: center;
+}
+
+.price-info {
+  text-align: right;
+}
+
+.unit-price {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.total-price {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--success);
+}
+
+.summary {
+  margin-top: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+  box-shadow: var(--shadow-lg);
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.summary-row.total {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 2px solid rgba(255,255,255,0.3);
+  font-size: 18px;
+}
+
+.summary-value {
+  font-weight: 600;
+}
+
+.summary-total {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.footer {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 16px 20px;
+  border-top: 2px solid #eee;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+}
+
+.btn {
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-large {
+  padding: 12px 24px;
+  font-size: 16px;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #5a6268;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #d32f2f;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s;
+  padding: 20px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-content h2 {
+  margin-bottom: 16px;
+  margin-top: 0;
+  color: var(--dark);
+  font-size: 20px;
+}
+
+.barcode-input {
+  width: 100%;
+  padding: 16px;
+  font-size: 18px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-family: monospace;
+  transition: border-color 0.2s;
+}
+
+.barcode-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.modal-buttons .btn {
+  flex: 1;
+}
+
+.quick-test {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.quick-test-title {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.quick-test-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-test-btn {
+  padding: 12px;
+  border: 2px solid #ddd;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.quick-test-btn:hover {
+  border-color: var(--primary);
+  background: #f0f8ff;
+  transform: translateX(4px);
+}
+
+.info-panel {
+  margin: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.info-panel details {
+  cursor: pointer;
+}
+
+.info-panel summary {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  user-select: none;
+}
+
+.info-panel summary:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a8a 100%);
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.info-product {
+  padding: 12px;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.info-product:hover {
+  border-color: var(--primary);
+  background: #f0f8ff;
+  transform: scale(1.05);
+}
+
+.info-icon {
+  font-size: 32px;
+}
+
+.info-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.info-details strong {
+  font-size: 13px;
+  color: var(--dark);
+}
+
+.info-details small {
+  font-size: 10px;
+  color: #999;
+  font-family: monospace;
+}
+
+.info-price {
+  font-size: 14px;
+  color: var(--success);
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .product-icon {
+    font-size: 40px;
+  }
+  
+  .header h1 {
+    font-size: 24px;
+  }
+}
+    </style>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="pwa.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+// Ürün veritabanı
+const PRODUCTS = [
+  {
+    id: 1,
+    barcode: '8690632006116',
+    name: 'Süt 1L',
+    price: 45.50,
+    category: 'Süt Ürünleri',
+    image: '🥛'
+  },
+  {
+    id: 2,
+    barcode: '8690504313614',
+    name: 'Ekmek',
+    price: 15.00,
+    category: 'Fırın Ürünleri',
+    image: '🍞'
+  },
+  {
+    id: 3,
+    barcode: '8690632897431',
+    name: 'Yumurta (10\'lu)',
+    price: 85.00,
+    category: 'Yumurta',
+    image: '🥚'
+  },
+  {
+    id: 4,
+    barcode: '8690504001234',
+    name: 'Peynir 500g',
+    price: 125.00,
+    category: 'Süt Ürünleri',
+    image: '🧀'
+  },
+  {
+    id: 5,
+    barcode: '8690632123456',
+    name: 'Domates (kg)',
+    price: 35.00,
+    category: 'Sebze',
+    image: '🍅'
+  },
+  {
+    id: 6,
+    barcode: '8690504567890',
+    name: 'Salatalık (kg)',
+    price: 25.00,
+    category: 'Sebze',
+    image: '🥒'
+  },
+  {
+    id: 7,
+    barcode: '8690632789012',
+    name: 'Elma (kg)',
+    price: 40.00,
+    category: 'Meyve',
+    image: '🍎'
+  },
+  {
+    id: 8,
+    barcode: '8690504890123',
+    name: 'Portakal (kg)',
+    price: 30.00,
+    category: 'Meyve',
+    image: '🍊'
+  },
+  {
+    id: 9,
+    barcode: '8690632345678',
+    name: 'Zeytinyağı 1L',
+    price: 350.00,
+    category: 'Yağlar',
+    image: '🫒'
+  },
+  {
+    id: 10,
+    barcode: '8690504456789',
+    name: 'Makarna 500g',
+    price: 22.50,
+    category: 'Temel Gıda',
+    image: '🍝'
+  },
+  {
+    id: 11,
+    barcode: '8690632111111',
+    name: 'Çay 500g',
+    price: 95.00,
+    category: 'İçecekler',
+    image: '☕'
+  },
+  {
+    id: 12,
+    barcode: '8690504222222',
+    name: 'Şeker 1kg',
+    price: 55.00,
+    category: 'Temel Gıda',
+    image: '🍬'
+  },
+  {
+    id: 13,
+    barcode: '8690632333333',
+    name: 'Pirinç 1kg',
+    price: 65.00,
+    category: 'Temel Gıda',
+    image: '🍚'
+  },
+  {
+    id: 14,
+    barcode: '8690504444444',
+    name: 'Mercimek 1kg',
+    price: 45.00,
+    category: 'Baklagiller',
+    image: '🫘'
+  },
+  {
+    id: 15,
+    barcode: '8690632555555',
+    name: 'Nohut 1kg',
+    price: 50.00,
+    category: 'Baklagiller',
+    image: '🫘'
+  }
+];
+
+const findProductByBarcode = (barcode) => {
+  return PRODUCTS.find(product => product.barcode === barcode);
+};
+
+const { useState, useEffect, useRef } = React;
+
+function App() {
+  const [scannedProducts, setScannedProducts] = useState([]);
+  const [barcodeInput, setBarcodeInput] = useState('');
+  const [showBarcodeInput, setShowBarcodeInput] = useState(false);
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showEditProduct, setShowEditProduct] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const [allProducts, setAllProducts] = useState(() => {
+    try {
+      const saved = localStorage.getItem('barkod_products');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        console.log('localStorage yüklendi:', parsed.length, 'ürün');
+        return parsed;
+      }
+    } catch (error) {
+      console.error('localStorage okuma hatası:', error);
+    }
+    console.log('Varsayılan ürünler yüklendi:', PRODUCTS.length, 'ürün');
+    return PRODUCTS;
+  });
+  const [newProduct, setNewProduct] = useState({
+    barcode: '',
+    name: '',
+    price: '',
+    category: '',
+    image: '📦',
+    boxQuantity: ''
+  });
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const videoRef = useRef(null);
+  const codeReader = useRef(null);
+  const fileInputRef = useRef(null);
+  const [showUpdatePrice, setShowUpdatePrice] = useState(false);
+  const [updateProductId, setUpdateProductId] = useState('');
+  const [updatePriceValue, setUpdatePriceValue] = useState('');
+  const [showExcelImport, setShowExcelImport] = useState(false);
+  const [importType, setImportType] = useState('add');
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallButton, setShowInstallButton] = useState(false);
+  const [showMoreActions, setShowMoreActions] = useState(false);
+
+  // PWA Install prompt
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallButton(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      setShowInstallButton(false);
+    }
+    
+    setDeferredPrompt(null);
+  };
+
+  // localStorage'a kaydet
+  useEffect(() => {
+    try {
+      localStorage.setItem('barkod_products', JSON.stringify(allProducts));
+      console.log('localStorage güncellendi:', allProducts.length, 'ürün');
+    } catch (error) {
+      console.error('localStorage yazma hatası:', error);
+      showNotification('Veri kaydetme hatası! Gizli mod kapalı olmalı.', 'error');
+    }
+  }, [allProducts]);
+
+  const handleAddBarcode = () => {
+    if (!barcodeInput.trim()) {
+      showNotification('Lütfen barkod giriniz!', 'error');
+      return;
+    }
+
+    const product = allProducts.find(p => p.barcode === barcodeInput.trim());
+
+    if (product) {
+      addProduct(product);
+      setBarcodeInput('');
+      setShowBarcodeInput(false);
+      showNotification(`${product.name} eklendi! 🎉`, 'success');
+    } else {
+      showNotification(`Barkod bulunamadı: ${barcodeInput}`, 'error');
+    }
+  };
+
+  const handleSaveNewProduct = () => {
+    if (!newProduct.barcode.trim() || !newProduct.name.trim() || !newProduct.price) {
+      showNotification('Lütfen tüm alanları doldurun!', 'error');
+      return;
+    }
+
+    const exists = allProducts.find(p => p.barcode === newProduct.barcode.trim());
+    if (exists) {
+      showNotification('Bu barkod zaten mevcut!', 'error');
+      return;
+    }
+
+    const productToAdd = {
+      id: allProducts.length + 1,
+      barcode: newProduct.barcode.trim(),
+      name: newProduct.name.trim(),
+      price: parseFloat(newProduct.price),
+      category: newProduct.category.trim() || 'Diğer',
+      image: newProduct.image || '📦',
+      boxQuantity: newProduct.boxQuantity ? parseInt(newProduct.boxQuantity) : null
+    };
+
+    setAllProducts([...allProducts, productToAdd]);
+    setNewProduct({ barcode: '', name: '', price: '', category: '', image: '📦', boxQuantity: '' });
+    setShowAddProduct(false);
+    showNotification(`${productToAdd.name} veritabanına eklendi! ✅`, 'success');
+  };
+
+  const deleteProductFromDatabase = (productId) => {
+    const product = allProducts.find(p => p.id === productId);
+    if (confirm(`"${product.name}" ürününü veritabanından silmek istediğinizden emin misiniz?`)) {
+      setAllProducts(allProducts.filter(p => p.id !== productId));
+      setScannedProducts(scannedProducts.filter(p => p.id !== productId));
+      showNotification('Ürün veritabanından silindi', 'info');
+
+      const handleEditProduct = (product) => {
+        setEditingProduct({
+          id: product.id,
+          barcode: product.barcode,
+          name: product.name,
+          price: product.price.toString(),
+          category: product.category,
+          image: product.image
+        });
+        setShowEditProduct(true);
+      };
+
+      const handleSaveEditProduct = () => {
+        if (!editingProduct.name.trim() || !editingProduct.price) {
+          showNotification('Lütfen tüm alanları doldurun!', 'error');
+          return;
+        }
+
+        const updatedProducts = allProducts.map(p => 
+          p.id === editingProduct.id 
+            ? {
+                ...p,
+                name: editingProduct.name.trim(),
+                price: parseFloat(editingProduct.price),
+                category: editingProduct.category.trim(),
+                image: editingProduct.image
+              }
+            : p
+        );
+
+        setAllProducts(updatedProducts);
+    
+        setScannedProducts(scannedProducts.map(p =>
+          p.id === editingProduct.id
+            ? {
+                ...p,
+                name: editingProduct.name.trim(),
+                price: parseFloat(editingProduct.price),
+                category: editingProduct.category.trim(),
+                image: editingProduct.image
+              }
+            : p
+        ));
+
+        setShowEditProduct(false);
+        setEditingProduct(null);
+        showNotification('Ürün güncellendi! ✅', 'success');
+      };
+    }
+  };
+
+  const addProduct = (product) => {
+    setScannedProducts(prevProducts => {
+      const existingIndex = prevProducts.findIndex(p => p.id === product.id);
+      
+      if (existingIndex !== -1) {
+        const updated = [...prevProducts];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: updated[existingIndex].quantity + 1
+        };
+        return updated;
+      }
+      
+      return [...prevProducts, { ...product, quantity: 1 }];
+    });
+  };
+
+  const updateQuantity = (productId, delta) => {
+    setScannedProducts(prevProducts => {
+      return prevProducts
+        .map(p => {
+          if (p.id === productId) {
+            const newQuantity = p.quantity + delta;
+            if (newQuantity <= 0) return null;
+            return { ...p, quantity: newQuantity };
+          }
+          return p;
+        })
+        .filter(p => p !== null);
+    });
+  };
+
+  const removeProduct = (productId) => {
+    if (confirm('Bu ürünü listeden çıkarmak istediğinizden emin misiniz?')) {
+      setScannedProducts(prevProducts => 
+        prevProducts.filter(p => p.id !== productId)
+      );
+      showNotification('Ürün kaldırıldı', 'info');
+    }
+  };
+
+  const clearList = () => {
+    if (scannedProducts.length === 0) return;
+    
+    if (confirm('Tüm listeyi temizlemek istediğinizden emin misiniz?')) {
+      setScannedProducts([]);
+      showNotification('Liste temizlendi', 'info');
+    }
+  };
+
+  const calculateTotal = () => {
+    return scannedProducts.reduce(
+      (total, product) => total + (product.price * product.quantity),
+      0
+    );
+  };
+
+  const getTotalItems = () => {
+    return scannedProducts.reduce((sum, p) => sum + p.quantity, 0);
+  };
+
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleAddBarcode();
+    }
+  };
+
+  const handleSavePriceUpdate = () => {
+    if (!updateProductId || !updatePriceValue) {
+      showNotification('Lütfen ürün ve yeni fiyatı seçin!', 'error');
+      return;
+    }
+
+    const pid = Number(updateProductId);
+    const newPrice = parseFloat(updatePriceValue);
+    if (isNaN(newPrice) || newPrice <= 0) {
+      showNotification('Geçerli bir fiyat girin!', 'error');
+      return;
+    }
+
+    const prod = allProducts.find(p => p.id === pid);
+    if (!prod) {
+      showNotification('Ürün bulunamadı!', 'error');
+      return;
+    }
+
+    const updatedProducts = allProducts.map(p => p.id === pid ? { ...p, price: newPrice } : p);
+    setAllProducts(updatedProducts);
+
+    setScannedProducts(prev => prev.map(p => p.id === pid ? { ...p, price: newPrice } : p));
+
+    showNotification(`${prod.name} fiyatı ${newPrice.toFixed(2)} ₺ olarak güncellendi ✅`, 'success');
+    setShowUpdatePrice(false);
+    setUpdateProductId('');
+    setUpdatePriceValue('');
+  };
+
+  const handleExcelImport = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    
+    // XLSX dosyası mı kontrol et
+    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+    
+    if (isExcel) {
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const csvData = XLSX.utils.sheet_to_csv(firstSheet, { FS: ';' });
+          
+          processCSVData(csvData);
+        } catch (error) {
+          console.error('XLSX okuma hatası:', error);
+          alert('Excel dosyası okunamadı: ' + error.message);
+          showNotification('Excel dosyası okunamadı!', 'error');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.onload = (e) => {
+        processCSVData(e.target.result);
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+  };
+  
+  const processCSVData = (textData) => {
+    try {
+        // BOM karakterini temizle
+        let text = textData.replace(/^\uFEFF/, '');
+        
+        // Tüm satır sonu türlerini normalize et
+        text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        console.log('Toplam satır:', lines.length);
+        console.log('İlk satır:', lines[0]);
+        
+        if (lines.length < 2) {
+          alert('Dosya boş veya geçersiz! Satır sayısı: ' + lines.length);
+          showNotification('Dosya boş veya geçersiz!', 'error');
+          return;
+        }
+
+        const headers = lines[0].split(/[,;\t]/).map(h => h.trim().toLowerCase());
+        console.log('Headers:', headers);
+        
+        const data = lines.slice(1);
+        console.log('Data satır sayısı:', data.length);
+
+        if (importType === 'add') {
+          let addedCount = 0;
+          let skippedCount = 0;
+          const newProducts = [...allProducts];
+          
+          data.forEach((line, index) => {
+            const values = line.split(/[,;\t]/).map(v => v.trim());
+            const barcodeIdx = headers.findIndex(h => h.includes('barkod') || h.includes('barcode'));
+            const nameIdx = headers.findIndex(h => (h.includes('ürün') && h.includes('adı')) || (h.includes('urun') && h.includes('adi')) || h === 'name' || (h.includes('ad') && h.includes('ı')));
+            const priceIdx = headers.findIndex(h => h.includes('fiyat') || h.includes('price'));
+            const categoryIdx = headers.findIndex(h => h.includes('kategori') || h.includes('category'));
+            const boxQuantityIdx = headers.findIndex(h => (h.includes('koli') && h.includes('adet')) || h === 'koli adeti');
+
+            if (barcodeIdx === -1 || nameIdx === -1 || priceIdx === -1) return;
+
+            const barcode = values[barcodeIdx];
+            const name = values[nameIdx];
+            const price = parseFloat(values[priceIdx]);
+            const category = categoryIdx !== -1 ? values[categoryIdx] : 'Diğer';
+            const boxQuantity = boxQuantityIdx !== -1 && values[boxQuantityIdx] ? parseInt(values[boxQuantityIdx]) : null;
+
+            if (!barcode || !name || isNaN(price)) return;
+
+            const exists = newProducts.find(p => p.barcode === barcode);
+            if (!exists) {
+              const newProduct = {
+                id: Math.max(...newProducts.map(p => p.id), 0) + addedCount + 1,
+                barcode,
+                name,
+                price,
+                category,
+                image: '📦',
+                boxQuantity
+              };
+              newProducts.push(newProduct);
+              addedCount++;
+            } else {
+              skippedCount++;
+            }
+          });
+          setAllProducts(newProducts);
+          if (addedCount > 0) {
+            showNotification(`${addedCount} ürün eklendi! ✅${skippedCount > 0 ? ` (${skippedCount} zaten mevcut)` : ''}`, 'success');
+          } else {
+            showNotification(`Tüm ürünler zaten mevcut! (${skippedCount} ürün)`, 'info');
+          }
+          console.log('Toplam ürün sayısı:', newProducts.length);
+          alert(`İşlem tamamlandı! Eklenen: ${addedCount}, Mevcut: ${skippedCount}, Toplam: ${newProducts.length} ürün`);
+        } else if (importType === 'update') {
+          let updatedCount = 0;
+          data.forEach(line => {
+            const values = line.split(/[,;\t]/).map(v => v.trim());
+            const barcodeIdx = headers.findIndex(h => h.includes('barkod') || h.includes('barcode'));
+            const priceIdx = headers.findIndex(h => h.includes('fiyat') || h.includes('price'));
+
+            if (barcodeIdx === -1 || priceIdx === -1) return;
+
+            const barcode = values[barcodeIdx];
+            const price = parseFloat(values[priceIdx]);
+
+            if (!barcode || isNaN(price)) return;
+
+            const productIndex = allProducts.findIndex(p => p.barcode === barcode);
+            if (productIndex !== -1) {
+              allProducts[productIndex].price = price;
+              updatedCount++;
+            }
+          });
+          setAllProducts([...allProducts]);
+          
+          setScannedProducts(prev => prev.map(sp => {
+            const updated = allProducts.find(p => p.barcode === sp.barcode);
+            return updated ? { ...sp, price: updated.price } : sp;
+          }));
+          
+          showNotification(`${updatedCount} ürün fiyatı güncellendi! ✅`, 'success');
+        }
+        
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        setShowExcelImport(false);
+      } catch (error) {
+        console.error('Hata:', error);
+        showNotification('Dosya okuma hatası: ' + error.message, 'error');
+      }
+  };
+
+  const downloadTemplate = () => {
+    const csv = importType === 'add' 
+      ? 'Barkod,Ürün Adı,Fiyat,Kategori\n8690632999999,Örnek Ürün,25.50,Atlışmalık\n8690632888888,Deneme Ürünü,15.00,İçecek'
+      : 'Barkod,Fiyat\n8690632006116,50.00\n8690504313614,18.00';
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = importType === 'add' ? 'urun-ekleme-sablonu.csv' : 'fiyat-guncelleme-sablonu.csv';
+    link.click();
+  };
+
+  const startCamera = async () => {
+    try {
+      setCameraError(null);
+      
+      // Kamera erişimi kontrolü
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraError('Tarayıcınız kamera özelliğini desteklemiyor. Lütfen güncel Chrome veya Safari kullanın.');
+        return;
+      }
+      
+      setShowCamera(true);
+      
+      // Kamera izni iste
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        
+        codeReader.current = new ZXing.BrowserBarcodeReader();
+        
+        codeReader.current.decodeFromVideoDevice(null, videoRef.current, (result, err) => {
+          if (result) {
+            const barcode = result.text;
+            const product = allProducts.find(p => p.barcode === barcode);
+            
+            if (product) {
+              addProduct(product);
+              showNotification(`${product.name} eklendi! 🎉`, 'success');
+              stopCamera();
+            } else {
+              showNotification(`Barkod bulunamadı: ${barcode}`, 'error');
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Kamera hatası:', error);
+      setShowCamera(false);
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        setCameraError('❌ Kamera izni reddedildi! Lütfen tarayıcı ayarlarından kamera iznini aktif edin:\n\n1. Adres çubuğundaki kilit (🔒) ikonuna tıklayın\n2. "Site izinleri" veya "Permissions" seçin\n3. Kamera iznini "İzin Ver" yapın\n4. Sayfayı yenileyin (F5)');
+      } else if (error.name === 'NotFoundError') {
+        setCameraError('❌ Kamera bulunamadı! Cihazınızda kamera olmayabilir veya başka bir uygulama kullanıyor olabilir.');
+      } else if (error.name === 'NotReadableError') {
+        setCameraError('❌ Kamera kullanımda! Başka bir uygulamayı kapatıp tekrar deneyin.');
+      } else {
+        setCameraError('❌ Kamera hatası: ' + error.message + '\n\nAlternatif: "⌨️ Manuel Barkod Gir" butonunu kullanın.');
+      }
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    
+    if (codeReader.current) {
+      codeReader.current.reset();
+    }
+    
+    setShowCamera(false);
+    setCameraError(null);
+  };
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
+  return (
+    <div className="app">
+      <header className="header">
+        <h1>🛒 Barkod Okuyucu</h1>
+        <p>Alışveriş Asistanı • {allProducts.length} Ürün Kayıtlı</p>
+      </header>
+
+      {notification && (
+        <div className={`notification ${notification.type}`}>
+          {notification.message}
+        </div>
+      )}
+
+      <main className="main-content">
+        
+        {/* Kamera Modal */}
+        {showCamera && (
+          <div className="modal-overlay" onClick={stopCamera}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '600px'}}>
+              <h2>📷 Barkod Okuyucu</h2>
+              <div style={{
+                position: 'relative',
+                width: '100%',
+                background: '#000',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                marginBottom: '20px'
+              }}>
+                <video
+                  ref={videoRef}
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                    maxHeight: '400px',
+                    objectFit: 'cover'
+                  }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: '80%',
+                  height: '40%',
+                  border: '3px solid #00ff00',
+                  borderRadius: '12px',
+                  boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)',
+                  pointerEvents: 'none'
+                }}>
+                  <div style={{
+                    position: 'absolute',
+                    top: '-30px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: 'rgba(0,255,0,0.9)',
+                    color: 'black',
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                  }}>
+                    Barkodu kare içine getirin
+                  </div>
+                </div>
+              </div>
+              <button className="btn btn-danger btn-large" onClick={stopCamera}>
+                ✕ Kamerayı Kapat
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Kamera Hatası */}
+        {cameraError && (
+          <div style={{
+            background: '#fff3cd',
+            border: '2px solid #ffc107',
+            borderRadius: '12px',
+            padding: '20px',
+            marginBottom: '20px',
+            color: '#856404'
+          }}>
+            <div style={{fontSize: '18px', marginBottom: '12px', fontWeight: 'bold'}}>
+              ⚠️ Kamera İzni Gerekli
+            </div>
+            <div style={{whiteSpace: 'pre-line', marginBottom: '16px', lineHeight: '1.6'}}>
+              {cameraError}
+            </div>
+            <div style={{
+              background: 'white',
+              padding: '16px',
+              borderRadius: '8px',
+              marginTop: '16px',
+              border: '1px solid #ffc107'
+            }}>
+              <strong>📱 Samsung Internet İçin:</strong>
+              <ol style={{marginTop: '8px', marginLeft: '20px', lineHeight: '1.8'}}>
+                <li>Adres çubuğundaki <strong>🔒 kilit ikonu</strong>na tıklayın</li>
+                <li><strong>"Site izinleri"</strong> seçin</li>
+                <li><strong>"Kamera"</strong> bölümünü <strong>"İzin Ver"</strong> yapın</li>
+                <li>Sayfayı yenileyin (F5)</li>
+              </ol>
+              <div style={{marginTop: '12px', padding: '12px', background: '#f0f8ff', borderRadius: '4px'}}>
+                💡 <strong>Alternatif:</strong> Manuel barkod girişi için <strong>"⌨️ Manuel Barkod Gir"</strong> butonunu kullanın!
+              </div>
+            </div>
+            <button 
+              className="btn btn-primary" 
+              onClick={() => setCameraError(null)}
+              style={{marginTop: '16px'}}
+            >
+              ✓ Anladım
+            </button>
+          </div>
+        )}
+
+        {showBarcodeInput && (
+          <div className="modal-overlay" onClick={() => setShowBarcodeInput(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <h2>Barkod Girin</h2>
+              <input
+                type="text"
+                className="barcode-input"
+                placeholder="Barkod numarasını yazın..."
+                value={barcodeInput}
+                onChange={(e) => setBarcodeInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                autoFocus
+              />
+              <div className="modal-buttons">
+                <button className="btn btn-primary" onClick={handleAddBarcode}>
+                  ✓ Ekle
+                </button>
+                <button className="btn btn-secondary" onClick={() => {
+                  setShowBarcodeInput(false);
+                  setBarcodeInput('');
+                }}>
+                  ✕ İptal
+                </button>
+              </div>
+              
+              <div className="quick-test">
+                <p className="quick-test-title">Hızlı Test:</p>
+                <div className="quick-test-buttons">
+                  {allProducts.slice(0, 5).map(product => (
+                    <button
+                      key={product.id}
+                      className="quick-test-btn"
+                      onClick={() => setBarcodeInput(product.barcode)}
+                    >
+                      {product.image} {product.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {scannedProducts.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">🛍️</div>
+            <h2>Sepetiniz Boş</h2>
+            <p>Barkod okutarak ürün eklemeye başlayın</p>
+          </div>
+        ) : (
+          <div className="product-list">
+            {scannedProducts.map(product => (
+              <div key={product.id} className="product-card">
+                <div className="product-header">
+                  <div className="product-icon">{product.image}</div>
+                  <div className="product-info">
+                    <h3>{product.name}</h3>
+                    <span className="product-category">{product.category}</span>
+                    <span className="product-barcode">Barkod: {product.barcode}</span>
+                    {product.boxQuantity && (
+                      <span className="product-barcode" style={{color: '#10b981', fontWeight: '600'}}>
+                        📦 Koli: {product.boxQuantity} adet | Adet Fiyatı: {(product.price / product.boxQuantity).toFixed(2)} ₺
+                      </span>
+                    )}
+                  </div>
+                  <button 
+                    className="btn-remove"
+                    onClick={() => removeProduct(product.id)}
+                    title="Ürünü Kaldır"
+                  >
+                    🗑️
+                  </button>
+                </div>
+                
+                <div className="product-footer">
+                  <div className="quantity-controls">
+                    <button 
+                      className="btn-quantity"
+                      onClick={() => updateQuantity(product.id, -1)}
+                    >
+                      −
+                    </button>
+                    <span className="quantity">{product.quantity}</span>
+                    <button 
+                      className="btn-quantity"
+                      onClick={() => updateQuantity(product.id, 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                  
+                  <div className="price-info">
+                    <div className="unit-price">
+                      {product.price.toFixed(2)} ₺ × {product.quantity}
+                    </div>
+                    <div className="total-price">
+                      = {(product.price * product.quantity).toFixed(2)} ₺
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {scannedProducts.length > 0 && (
+          <div className="summary">
+            <div className="summary-row">
+              <span>Toplam Ürün:</span>
+              <span className="summary-value">{getTotalItems()} adet</span>
+            </div>
+            <div className="summary-row total">
+              <span>Genel Toplam:</span>
+              <span className="summary-total">{calculateTotal().toFixed(2)} ₺</span>
+            </div>
+          </div>
+        )}
+      </main>
+
+      <footer className="footer">
+        <button 
+          className="btn btn-primary btn-large"
+          onClick={startCamera}
+        >
+          📷 Kamera ile Oku
+        </button>
+        
+        <button 
+          className="btn btn-large"
+          style={{background: '#9c27b0', color: 'white'}}
+          onClick={() => setShowMoreActions(!showMoreActions)}
+        >
+          {showMoreActions ? '▲ Menüyü Gizle' : '▼ Diğer İşlemler'}
+        </button>
+
+        {showMoreActions && (
+          <div style={{display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px'}}>
+            {(showInstallButton || deferredPrompt) && (
+              <button 
+                className="btn btn-large"
+                style={{background: '#ff9800', color: 'white'}}
+                onClick={handleInstallClick}
+              >
+                📲 Ana Ekrana Ekle (APK)
+              </button>
+            )}
+            
+            <button 
+              className="btn btn-large"
+              style={{background: '#2196F3', color: 'white'}}
+              onClick={() => setShowBarcodeInput(true)}
+            >
+              ⌨️ Manuel Barkod Gir
+            </button>
+            
+            <button 
+              className="btn btn-large"
+              style={{background: '#4CAF50', color: 'white'}}
+              onClick={() => setShowUpdatePrice(true)}
+            >
+              💲 Ürün Fiyat Güncelle
+            </button>
+            
+            <button 
+              className="btn btn-large"
+              style={{background: '#10b981', color: 'white'}}
+              onClick={() => setShowExcelImport(true)}
+            >
+              📄 Excel İçe Aktar
+            </button>
+            
+            <button 
+              className="btn btn-large"
+              style={{background: '#FF9800', color: 'white'}}
+              onClick={() => setShowAddProduct(true)}
+            >
+          ➕ Yeni Ürün Ekle
+        </button>
+        
+        {scannedProducts.length > 0 && (
+          <button 
+            className="btn btn-danger btn-large"
+            onClick={clearList}
+          >
+            🗑️ Listeyi Temizle
+          </button>
+        )}
+      </footer>
+
+      {/* Yeni Ürün Ekleme Modal */}
+      {showAddProduct && (
+        <div className="modal-overlay" onClick={() => setShowAddProduct(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>➕ Yeni Ürün Ekle</h2>
+            
+            <div style={{marginBottom: '12px'}}>
+              <label style={{display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '14px'}}>
+                Barkod Numarası *
+              </label>
+              <input
+                type="text"
+                className="barcode-input"
+                placeholder="Örn: 8690632999999"
+                value={newProduct.barcode}
+                onChange={(e) => setNewProduct({...newProduct, barcode: e.target.value})}
+              />
+            </div>
+
+            <div style={{marginBottom: '12px'}}>
+              <label style={{display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '14px'}}>
+                Ürün Adı *
+              </label>
+              <input
+                type="text"
+                className="barcode-input"
+                placeholder="Örn: Çikolata 100g"
+                value={newProduct.name}
+                onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+              />
+            </div>
+
+            <div style={{marginBottom: '12px'}}>
+              <label style={{display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '14px'}}>
+                Fiyat (₺) *
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                className="barcode-input"
+                placeholder="Örn: 25.50"
+                value={newProduct.price}
+                onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
+              />
+            </div>
+
+            <div style={{marginBottom: '12px'}}>
+              <label style={{display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '14px'}}>
+                Koli Adeti (Opsiyonel)
+              </label>
+              <input
+                type="number"
+                step="1"
+                className="barcode-input"
+                placeholder="Örn: 12 (koli içinde 12 adet varsa)"
+                value={newProduct.boxQuantity}
+                onChange={(e) => setNewProduct({...newProduct, boxQuantity: e.target.value})}
+              />
+              {newProduct.price && newProduct.boxQuantity && parseFloat(newProduct.boxQuantity) > 0 && (
+                <div style={{marginTop: '8px', padding: '8px', background: '#e8f5e9', borderRadius: '6px', fontSize: '14px'}}>
+                  <strong>📊 Adet Fiyatı:</strong> {(parseFloat(newProduct.price) / parseFloat(newProduct.boxQuantity)).toFixed(2)} ₺
+                </div>
+              )}
+            </div>
+
+            <div style={{marginBottom: '12px'}}>
+              <label style={{display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '14px'}}>
+                Kategori
+              </label>
+              <input
+                type="text"
+                className="barcode-input"
+                placeholder="Örn: Atıştırmalık"
+                value={newProduct.category}
+                onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+              />
+            </div>
+
+            <div style={{marginBottom: '12px'}}>
+              <label style={{display: 'block', marginBottom: '6px', fontWeight: '600', color: '#333', fontSize: '14px'}}>
+                Emoji İkonu
+              </label>
+              <div style={{display: 'flex', gap: '6px', flexWrap: 'wrap'}}>
+                {['📦', '🍫', '🍪', '🥤', '🍕', '🍔', '🥗', '🍰', '🧃', '🍺', '🥛', '🍞', '🧈', '🥩', '🐟'].map(emoji => (
+                  <button
+                    key={emoji}
+                    onClick={() => setNewProduct({...newProduct, image: emoji})}
+                    style={{
+                      fontSize: '22px',
+                      padding: '6px',
+                      border: newProduct.image === emoji ? '2px solid #2196F3' : '1px solid #ddd',
+                      borderRadius: '8px',
+                      background: 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="modal-buttons">
+              <button className="btn btn-primary" onClick={handleSaveNewProduct}>
+                ✓ Kaydet
+              </button>
+              <button className="btn btn-secondary" onClick={() => {
+                setShowAddProduct(false);
+                setNewProduct({ barcode: '', name: '', price: '', category: '', image: '📦', boxQuantity: '' });
+              }}>
+                ✕ İptal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ürün Fiyat Güncelle Modal */}
+      {showUpdatePrice && (
+        <div className="modal-overlay" onClick={() => setShowUpdatePrice(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>💲 Ürün Fiyat Güncelle</h2>
+
+            <div style={{marginBottom: '16px'}}>
+              <label style={{display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333'}}>
+                Ürün Seçin
+              </label>
+              <select
+                className="barcode-input"
+                value={updateProductId}
+                onChange={(e) => setUpdateProductId(e.target.value)}
+              >
+                <option value="">— Ürün seçin —</option>
+                {allProducts.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.image} {p.name} — {p.barcode}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {updateProductId && (
+              <div style={{marginBottom: '12px', color: '#666'}}>
+                Mevcut fiyat: <strong>{allProducts.find(p => p.id === Number(updateProductId))?.price.toFixed(2)} ₺</strong>
+              </div>
+            )}
+
+            <div style={{marginBottom: '16px'}}>
+              <label style={{display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333'}}>
+                Yeni Fiyat (₺) *
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                className="barcode-input"
+                placeholder="Örn: 25.50"
+                value={updatePriceValue}
+                onChange={(e) => setUpdatePriceValue(e.target.value)}
+              />
+            </div>
+
+            <div className="modal-buttons">
+              <button className="btn btn-primary" onClick={handleSavePriceUpdate}>
+                ✓ Kaydet
+              </button>
+              <button className="btn btn-secondary" onClick={() => {
+                setShowUpdatePrice(false);
+                setUpdateProductId('');
+                setUpdatePriceValue('');
+              }}>
+                ✕ İptal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Excel İçe Aktarma Modal */}
+      {showExcelImport && (
+        <div className="modal-overlay" onClick={() => setShowExcelImport(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>📄 Excel Dosyası İçe Aktar</h2>
+            
+            <div style={{marginBottom: '20px', padding: '12px', background: '#e3f2fd', borderRadius: '8px'}}>
+              <strong>💡 Bilgi:</strong> CSV dosyası kullanarak toplu ürün ekleme veya fiyat güncelleme yapabilirsiniz.
+            </div>
+
+            <div style={{marginBottom: '16px'}}>
+              <label style={{display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333'}}>
+                İşlem Tipi
+              </label>
+              <select
+                className="barcode-input"
+                value={importType}
+                onChange={(e) => setImportType(e.target.value)}
+              >
+                <option value="add">🆕 Yeni Ürünler Ekle</option>
+                <option value="update">💰 Fiyatları Güncelle</option>
+              </select>
+            </div>
+
+            <div style={{marginBottom: '16px', padding: '12px', background: '#f0fdf4', borderRadius: '8px', fontSize: '13px'}}>
+              <strong>📝 Gerekli Format:</strong><br/>
+              {importType === 'add' ? (
+                <>
+                  <code style={{background: '#dcfce7', padding: '3px 6px', borderRadius: '4px', display: 'block', marginTop: '6px', fontSize: '11px', overflow: 'auto'}}>
+                    Barkod;Ürün Adı;Fiyat;Kategori;Koli Adeti
+                  </code><br/>
+                  <small style={{color: '#666', fontSize: '11px', display: 'block', lineHeight: '1.4'}}>
+                    Örnek:<br/>
+                    8690632999999;Çikolata;25.50;Atıştırmalık;12
+                  </small>
+                </>
+              ) : (
+                <>
+                  <code style={{background: '#dcfce7', padding: '3px 6px', borderRadius: '4px', display: 'block', marginTop: '6px', fontSize: '11px'}}>
+                    Barkod;Fiyat
+                  </code><br/>
+                  <small style={{color: '#666', fontSize: '11px', display: 'block'}}>
+                    Örnek: 8690632006116;50.00
+                  </small>
+                </>
+              )}
+            </div>
+
+            <button 
+              className="btn btn-large"
+              style={{background: '#3b82f6', color: 'white', marginBottom: '16px', width: '100%'}}
+              onClick={downloadTemplate}
+            >
+              💾 Şablon Dosya İndir
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.txt,.xlsx,.xls"
+              onChange={handleExcelImport}
+              style={{
+                width: '100%',
+                padding: '12px',
+                fontSize: '16px',
+                borderRadius: '8px',
+                border: '2px solid #10b981',
+                marginBottom: '16px',
+                background: 'white'
+              }}
+            />
+
+            <div className="modal-buttons">
+              <button className="btn btn-secondary" onClick={() => setShowExcelImport(false)}>
+                ✕ Kapat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="info-panel">
+        <details>
+          <summary>📋 Mevcut Ürünler ({allProducts.length} adet)</summary>
+          <div className="product-grid">
+            {allProducts.map(product => (
+              <div 
+                key={product.id} 
+                className="info-product"
+                style={{position: 'relative'}}
+              >
+                
+                <span className="info-icon" onClick={() => {
+                  setBarcodeInput(product.barcode);
+                  setShowBarcodeInput(true);
+                }}>{product.image}</span>
+                <div className="info-details" onClick={() => {
+                  setBarcodeInput(product.barcode);
+                  setShowBarcodeInput(true);
+                }}>
+                  <strong>{product.name}</strong>
+                  <small>{product.barcode}</small>
+                  <span className="info-price">{product.price.toFixed(2)} ₺</span>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteProductFromDatabase(product.id);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    background: '#f44336',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => e.target.style.background = '#d32f2f'}
+                  onMouseOut={(e) => e.target.style.background = '#f44336'}
+                  title="Ürünü Sil"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        </details>
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+    </script>
+</body>
+</html>
