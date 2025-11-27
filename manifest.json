@@ -1,1 +1,2 @@
-cd "c:\Users\aryam\OneDrive\Desktop\MOBİL UYGULAMA\web-version"; Get-Content manifest.json | Set-Clipboard
+cd 
+"c:\Users\aryam\OneDrive\Desktop\MOBİL UYGULAMA\web-version"; Get-Content manifest.json | Set-Clipboard
