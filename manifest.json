@@ -1,2 +1,26 @@
-cd "c:\Users\aryam\OneDrive\Desktop\MOBİL UYGULAMA\web-version"; Get-Content manifest.json | Set-Clipboard
-
+{
+  "name": "Fiyat Sistemi - Alışveriş Asistanı",
+  "short_name": "Fiyat Sistemi",
+  "description": "Kamera ile barkod okutarak alışveriş yapın, fiyatları hesaplayın, ürün yönetin",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#667eea",
+  "orientation": "portrait",
+  "categories": ["shopping", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/891/891462.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/192/891/891462.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
