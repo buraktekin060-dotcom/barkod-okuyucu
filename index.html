@@ -5,14 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Barkod Okuyucu">
+    <meta name="apple-mobile-web-app-title" content="Fiyat Sistemi">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#667eea">
     <meta name="description" content="Kamera ile barkod okutarak alışveriş yapın, fiyatları hesaplayın">
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="icon.svg">
-    <link rel="apple-touch-icon" href="icon.svg">
-    <title>Barkod Okuyucu - Alışveriş Asistanı</title>
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="./icons/512.png">
+    <link rel="apple-touch-icon" href="./icons/192.png">
+    <title>Fiyat Sistemi - Alışveriş Asistanı</title>
+    <script>
+      // Register service worker for PWA
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./service-worker.js').catch(err => console.log('SW reg error', err));
+        });
+      }
+    </script>
     <style>
         * {
   margin: 0;
